@@ -50,7 +50,9 @@ mongoose.connect(MONGODB_URI)
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
+// ==================== WEB ROUTES ====================
 app.get('/', async (req, res) => {
     const shortUrls = await ShortUrl.find();
     const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -62,14 +64,110 @@ app.post('/shortUrls', async (req, res) => {
     res.redirect('/');
 })
 
+// ==================== API ROUTES ====================
+
+// 1. Create a short URL
+app.post('/api/shorten', async (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url) {
+            return res.status(400).json({ error: 'URL is required' });
+        }
+        
+        const shortUrl = await ShortUrl.create({ full: url });
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        
+        res.status(201).json({
+            success: true,
+            data: {
+                fullUrl: shortUrl.full,
+                shortUrl: `${baseUrl}/${shortUrl.short}`,
+                shortCode: shortUrl.short,
+                clicks: shortUrl.clicks
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// 2. Get all URLs
+app.get('/api/urls', async (req, res) => {
+    try {
+        const shortUrls = await ShortUrl.find();
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        
+        const urls = shortUrls.map(url => ({
+            fullUrl: url.full,
+            shortUrl: `${baseUrl}/${url.short}`,
+            shortCode: url.short,
+            clicks: url.clicks
+        }));
+        
+        res.json({
+            success: true,
+            count: urls.length,
+            data: urls
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// 3. Get specific URL info
+app.get('/api/urls/:shortCode', async (req, res) => {
+    try {
+        const shortUrl = await ShortUrl.findOne({ short: req.params.shortCode });
+        
+        if (!shortUrl) {
+            return res.status(404).json({ error: 'Short URL not found' });
+        }
+        
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        
+        res.json({
+            success: true,
+            data: {
+                fullUrl: shortUrl.full,
+                shortUrl: `${baseUrl}/${shortUrl.short}`,
+                shortCode: shortUrl.short,
+                clicks: shortUrl.clicks
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// 4. Delete a short URL
+app.delete('/api/urls/:shortCode', async (req, res) => {
+    try {
+        const shortUrl = await ShortUrl.findOneAndDelete({ short: req.params.shortCode });
+        
+        if (!shortUrl) {
+            return res.status(404).json({ error: 'Short URL not found' });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Short URL deleted successfully'
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ==================== REDIRECT ROUTE ====================
 app.get('/:shortUrl', async (req, res) => {
-    const shortUrl = await ShortUrl.findOne({ short: req.params.shortUrl })
-    if (shortUrl == null) return res.sendStatus(404)
+    const shortUrl = await ShortUrl.findOne({ short: req.params.shortUrl });
+    if (shortUrl == null) return res.sendStatus(404);
     
-    shortUrl.clicks++
-    shortUrl.save()
+    shortUrl.clicks++;
+    shortUrl.save();
     
-    res.redirect(shortUrl.full)
+    res.redirect(shortUrl.full);
 })
 
-app.listen(process.env.PORT || 3000);
+app.listen(process.env.PORT || 3000, () => {
+    console.log('Server running on port', process.env.PORT || 3000);
+});
