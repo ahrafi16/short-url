@@ -12,13 +12,31 @@
     <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow">
         <h1 class="text-3xl font-bold mb-6">URL Shortener</h1>
 
-        <form action="/shortUrls" method="POST" class="my-4 flex gap-2">
-            <label for="fullUrl" class="sr-only">Url</label>
-            <input placeholder="Enter your URL" type="url" name="fullUrl" id="fullUrl"
-                class="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required>
-            <button type="submit"
-                class="bg-blue-500 text-white rounded px-6 py-2 hover:bg-blue-600 cursor-pointer">Shorten</button>
+        <form action="/shortUrls" method="POST" class="my-4">
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label for="fullUrl" class="block text-sm font-medium text-gray-700 mb-1">Full URL</label>
+                    <input placeholder="Enter your URL" type="url" name="fullUrl" id="fullUrl"
+                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required>
+                </div>
+                
+                <div>
+                    <label for="customShort" class="block text-sm font-medium text-gray-700 mb-1">
+                        Custom Short Code (optional)
+                    </label>
+                    <input placeholder="e.g., my-link (leave empty for random)" type="text" name="customShort" id="customShort"
+                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        pattern="[a-zA-Z0-9-_]+"
+                        title="Only letters, numbers, hyphens, and underscores allowed">
+                    <p class="text-xs text-gray-500 mt-1">Leave empty to generate a random code</p>
+                </div>
+
+                <button type="submit"
+                    class="bg-blue-500 text-white rounded px-6 py-2 hover:bg-blue-600 cursor-pointer">
+                    Shorten
+                </button>
+            </div>
         </form>
 
         <table class="w-full mt-8 border-collapse">
@@ -39,14 +57,14 @@
                         </td>
                         <td class="border border-gray-300 px-4 py-2">
                             <a class="text-blue-600 underline hover:text-blue-800" href="/<%= shortUrl.short %>">
-                                <%= shortUrl.short %>
+                                <%= baseUrl %>/<%= shortUrl.short %>
                             </a>
                         </td>
                         <td class="border border-gray-300 px-4 py-2">
                             <%= shortUrl.clicks %>
                         </td>
                     </tr>
-                    <% }) %>
+                <% }) %>
             </tbody>
         </table>
     </div>

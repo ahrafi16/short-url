@@ -59,22 +59,83 @@ app.get('/', async (req, res) => {
     res.render('index', { shortUrls: shortUrls, baseUrl: baseUrl });
 })
 
+// app.post('/shortUrls', async (req, res) => {
+//     await ShortUrl.create({ full: req.body.fullUrl })
+//     res.redirect('/');
+// })
+
+// new for customized short code
 app.post('/shortUrls', async (req, res) => {
-    await ShortUrl.create({ full: req.body.fullUrl })
-    res.redirect('/');
-})
+    try {
+        const { fullUrl, customShort } = req.body;
+        
+        // If custom short code provided, check if it already exists
+        if (customShort) {
+            const existing = await ShortUrl.findOne({ short: customShort });
+            if (existing) {
+                // Handle duplicate - you can render with error or redirect
+                return res.status(400).send('Short code already exists. Please choose another.');
+            }
+            await ShortUrl.create({ full: fullUrl, short: customShort });
+        } else {
+            // Generate random short code
+            await ShortUrl.create({ full: fullUrl });
+        }
+        
+        res.redirect('/');
+    } catch (error) {
+        res.status(500).send('Server error');
+    }
+});
 
 // ==================== API ROUTES ====================
 
 // 1. Create a short URL
+// app.post('/api/shorten', async (req, res) => {
+//     try {
+//         const { url } = req.body;
+//         if (!url) {
+//             return res.status(400).json({ error: 'URL is required' });
+//         }
+        
+//         const shortUrl = await ShortUrl.create({ full: url });
+//         const baseUrl = `${req.protocol}://${req.get('host')}`;
+        
+//         res.status(201).json({
+//             success: true,
+//             data: {
+//                 fullUrl: shortUrl.full,
+//                 shortUrl: `${baseUrl}/${shortUrl.short}`,
+//                 shortCode: shortUrl.short,
+//                 clicks: shortUrl.clicks
+//             }
+//         });
+//     } catch (error) {
+//         res.status(500).json({ error: 'Server error' });
+//     }
+// });
+
+// Updated to allow custom short code
 app.post('/api/shorten', async (req, res) => {
     try {
-        const { url } = req.body;
+        const { url, customShort } = req.body;
         if (!url) {
             return res.status(400).json({ error: 'URL is required' });
         }
         
-        const shortUrl = await ShortUrl.create({ full: url });
+        // If custom short code provided, check if it already exists
+        if (customShort) {
+            const existing = await ShortUrl.findOne({ short: customShort });
+            if (existing) {
+                return res.status(400).json({ error: 'Short code already exists' });
+            }
+        }
+        
+        const shortUrl = await ShortUrl.create({ 
+            full: url,
+            ...(customShort && { short: customShort })
+        });
+        
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         
         res.status(201).json({
